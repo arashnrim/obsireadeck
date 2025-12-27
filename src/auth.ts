@@ -64,7 +64,7 @@ export class AuthService {
 			return true;
 		} catch (error) {
 			console.log("Login error", error);
-			new Notice("Login error, check your credentials");
+			new Notice("Readeck Importer: An error occurred while logging in. Check your credentials.");
 			return false;
 		}
 	}

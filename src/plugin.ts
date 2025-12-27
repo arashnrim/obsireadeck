@@ -42,7 +42,7 @@ export default class RDPlugin extends Plugin {
 			id: 'resync',
 			name: 'Resync all bookmarks',
 			callback: async () => {
-				this.settings.lastSyncAt = ''
+				this.settings.lastSyncAt = ""
 				await this.saveSettings()
 				await this.bookmarks.getReadeckData()
 			},

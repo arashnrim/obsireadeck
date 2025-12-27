@@ -11,6 +11,7 @@ export interface ReadeckPluginSettings {
 	overwrite: boolean;
 	delete: boolean;
 	mode: string;
+	noticeVerbosity: string;
 	addLinkInAnnotations: boolean;
 	includeFrontmatter: boolean;
 }
@@ -114,9 +115,14 @@ export const DEFAULT_SETTINGS: ReadeckPluginSettings = {
 	apiToken: "",
 	username: "",
 	folder: "Readeck",
+	createBookmarkSubfolder: true,
+	slugifyFileNames: false,
 	lastSyncAt: "",
 	autoSyncOnStartup: true,
 	overwrite: false,
 	delete: false,
 	mode: "text",
+	noticeVerbosity: "normal",
+	addLinkInAnnotations: true,
+	includeFrontmatter: true,
 }

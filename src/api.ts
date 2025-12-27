@@ -10,7 +10,7 @@ export class ReadeckApi {
     }
 
     async getBookmarksStatus(
-        lastSyncAt: string = ''
+        lastSyncAt: string = ""
     ): Promise<Response<BookmarkStatus>> {
         const params = new URLSearchParams({
             ...(lastSyncAt && { since: lastSyncAt })

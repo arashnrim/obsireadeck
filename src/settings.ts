@@ -50,11 +50,11 @@ export class RDSettingTab extends PluginSettingTab {
 								loginMode = "oauth";
 							} else {
 								loginMode = "password";
-								new Notice("Readeck Importer: OAuth not supported on this Readeck instance. Consider upgrading your Readeck instance as password login will be removed soon.");
+								new Notice("Readeck Importer: OAuth is not supported on this Readeck instance. Consider upgrading your Readeck instance as password login will be removed soon.");
 							}
 						} catch (err) {
 							console.log("Error connecting to Readeck instance", err);
-							new Notice('Readeck Importer: error connecting to Readeck instance: ' + err.message);
+							new Notice('Readeck Importer: Error connecting to Readeck instance: ' + err.message);
 							loginButton.setDisabled(false);
 							return;
 						}
@@ -168,11 +168,11 @@ export class RDSettingTab extends PluginSettingTab {
 				btn.setButtonText('Reset')
 					.setTooltip('Reset the last sync timestamp')
 					.onClick(async () => {
-						this.plugin.settings.lastSyncAt = '';
+						this.plugin.settings.lastSyncAt = "";
 						await this.plugin.saveSettings();
 
-						new Notice('Last sync reset');
-						lastSyncText.setValue('');
+						new Notice('Readeck Importer: The last sync timestamp has been reset. The next sync will fetch all bookmarks.');
+						lastSyncText.setValue("");
 						lastSyncButton.setButtonText('Reset').setDisabled(true);
 					});
 			});
@@ -223,6 +223,22 @@ export class RDSettingTab extends PluginSettingTab {
 					})
 			});
 		
+		new Setting(containerEl)
+			.setName('Notice mode')
+			.setDesc('Set how often notices are shown.')
+			.addDropdown((dropdown) => {
+				dropdown
+					.addOptions({
+						verbose: 'Verbose',
+						normal: 'Normal',
+					})
+					.setValue(this.plugin.settings.noticeVerbosity)
+					.onChange(async (value) => {
+						this.plugin.settings.noticeVerbosity = value;
+						await this.plugin.saveData(this.plugin.settings);
+					})
+			});
+		
 		new Setting(containerEl).setName("Annotations-only settings").setHeading();
 		
 		new Setting(containerEl)
@@ -253,8 +269,8 @@ class LoginModal extends Modal {
 		this.modalEl.addClass("w-auto");
 		this.setTitle('Login');
 
-		let username = '';
-		let password = '';
+		let username = "";
+		let password = "";
 
 		new Setting(this.contentEl)
 			.setName('Username')

@@ -48,13 +48,13 @@ export class BookmarksService {
 			);
 			bookmarksStatus = response.items;
 		} catch (error) {
-			new Notice(`Readeck importer: Error getting bookmarks, error ${error}`);
+			new Notice(`Readeck Importer: An error occured while getting bookmarks: ${error}`);
 			return;
 		}
 
 		// Check if bookmarks were returned
 		if (bookmarksStatus.length <= 0) {
-			new Notice("Readeck importer: No new bookmarks found");
+			if (this.settings.noticeVerbosity === 'verbose') new Notice("Readeck Importer: No new bookmarks were found.");
 			return;
 		}
 
@@ -90,7 +90,7 @@ export class BookmarksService {
 		const toUpdateIds = bookmarksStatus.filter(b => b.type === 'update').map(b => b.id);
 		const bookmarksData = new Map<string, BookmarkData>();
 		for (const id of toUpdateIds) {
-			bookmarksData.set(id, { id: id, text: null, json: { title: '', description: '', created: '', authors: [], url: '', labels: [] }, images: [], annotations: [] });
+			bookmarksData.set(id, { id: id, text: null, json: { title: "", description: "", created: "", authors: [], url: "", labels: [] }, images: [], annotations: [] });
 		}
 
 		if (get.md || get.annotations) {
@@ -116,14 +116,14 @@ export class BookmarksService {
 			if (bookmark.text || bookmark.annotations.length > 0) {
 				// Create bookmark folder
 				const bookmarkFolderPath = this.settings.createBookmarkSubfolder ? `${this.settings.folder}/${id}` : this.settings.folder;
-				await this.createFolderIfNotExists(id, bookmarkFolderPath);
+				await this.createFolderIfNotExists(bookmark.json.title, bookmarkFolderPath);
 				this.addBookmarkMD(id, bookmark, bookmarkFolderPath);
 			}
 
 			// Save images
 			if (bookmark.images.length > 0 && bookmark.json) {
 				const bookmarkImgsFolderPath = this.settings.createBookmarkSubfolder ? `${this.settings.folder}/${id}/images` : `${this.settings.folder}/images`;
-				await this.createFolderIfNotExists(id, bookmarkImgsFolderPath);
+				await this.createFolderIfNotExists(bookmark.json.title, bookmarkImgsFolderPath);
 				for (const image of bookmark.images) {
 					const filePath = `${bookmarkImgsFolderPath}/${image.filename}`;
 					await this.createFile(bookmark.json.title, filePath, image.content, false);
@@ -148,7 +148,7 @@ export class BookmarksService {
 	private async getBookmarkAnnotations(bookmarkId: string) {
 		const annotations = await this.api.getBookmarkAnnotations(bookmarkId);
 		if (!annotations) {
-			new Notice(`Readeck importer: Error getting annotations for ${bookmarkId}`);
+			new Notice(`Readeck Importer: An unknown error occurred while getting annotations for ${bookmarkId}.`);
 		}
 		return annotations;
 	}
@@ -166,7 +166,7 @@ export class BookmarksService {
 	private async addBookmarkMD(bookmarkId: string, bookmarkData: BookmarkData, bookmarkFolderPath?: string) {
 		const { json: bookmarkJson, json: { title: bookmarkTitle }, text: bookmarkContent, annotations: bookmarkAnnotations } = bookmarkData;
 		const filePath = `${bookmarkFolderPath}/${this.settings.slugifyFileNames ? Utils.slugifyFileName(bookmarkTitle) : Utils.sanitizeFileName(bookmarkTitle)}.md`;
-		let noteContent = '';
+		let noteContent = "";
 
 		// The only time bookmarkContent can be null is when only annotations are imported
 		if (bookmarkContent == null && this.settings.includeFrontmatter) {
@@ -185,15 +185,15 @@ export class BookmarksService {
 			const annotations = this.buildAnnotations(bookmarkId, bookmarkAnnotations);
 			noteContent += `${annotations}`;
 		}
-		await this.createFile(bookmarkTitle, filePath, noteContent);
+		await this.createFile(bookmarkTitle, filePath, noteContent, this.settings.noticeVerbosity === 'verbose');
 	}
 
 	private async parseBookmarksMP(bookmarksData: Map<string, BookmarkData>, bookmarksMPData: any): Promise<boolean> {
 		const partsData: MultipartPart[] = await Utils.parseMultipart(bookmarksMPData);
 
 		for (const partData of partsData) {
-			const mediaType = partData.mediaType || '';
-			const bookmarkId = partData.headers.get('Bookmark-Id') || '';	
+			const mediaType = partData.mediaType || "";
+			const bookmarkId = partData.headers.get('Bookmark-Id') || "";	
 			const bookmark: BookmarkData = bookmarksData.get(bookmarkId)!;
 			if (mediaType == 'text/markdown') {
 				const markdownContent = await partData.text();
@@ -231,51 +231,51 @@ export class BookmarksService {
 			annotationsContent = annotationsContent + bookmarkAnnotations.map(
 				(ann: any) =>
 					`> ${ann.text}` +
-					(this.settings.addLinkInAnnotations ? ` - [#](${this.settings.apiUrl}/bookmarks/${bookmarkId}#annotation-${ann.id})` : '')
+					(this.settings.addLinkInAnnotations ? ` - [#](${this.settings.apiUrl}/bookmarks/${bookmarkId}#annotation-${ann.id})` : "")
 			).join('\n\n');
 		}
 		return annotationsContent;
 	}
 
-	private async createFile(bookmarkTitle: string, filePath: string, content: any, showNotice: boolean = true) {
+	private async createFile(bookmarkTitle: string, filePath: string, content: any, showNotice: boolean) {
 		const file = this.app.vault.getAbstractFileByPath(filePath);
 
 		if (file && file instanceof TFile) {
 			if (this.settings.overwrite) {
 				// the file exists and overwrite is true
 				await this.app.vault.modify(file, content);
-				if (showNotice) { new Notice(`Readeck importer: Overwriting note for ${bookmarkTitle}`); }
+				if (showNotice) { new Notice(`Readeck Importer: Overwriting note for ${bookmarkTitle}.`); }
 			} else {
 				// the file exists and overwrite is false
-				if (showNotice) { new Notice(`Readeck importer: Note for ${bookmarkTitle} already exists`); }
+				if (showNotice) { new Notice(`Readeck Importer: Note for \"${bookmarkTitle}\" already exists.`); }
 			}
 		} else if (!file) {
 			// create file if not exists
 			await this.app.vault.create(filePath, content);
-			if (showNotice) { new Notice(`Readeck importer: Creating note for ${bookmarkTitle}`); }
+			if (showNotice) { new Notice(`Readeck Importer: Creating note for ${bookmarkTitle}.`); }
 		}
 	}
 
-	private async createFolderIfNotExists(id: string, path: string, showNotice: boolean = false) {
+	private async createFolderIfNotExists(bookmarkTitle: string, path: string, showNotice: boolean = false) {
 		const folder = this.app.vault.getAbstractFileByPath(path);
 
 		if (folder && folder instanceof TFolder) {
-			if (showNotice) { new Notice(`Readeck importer: Folder already exists in ${id}`); }
+			if (showNotice) { new Notice(`Readeck Importer: A folder or file already exists in ${bookmarkTitle}.`); }
 		} else {
 			// create file if not exists
 			await this.app.vault.createFolder(path);
-			if (showNotice) { new Notice(`Readeck importer: Creating folder for ${id} for Readeck`); }
+			if (showNotice) { new Notice(`Readeck Importer: Created a folder for bookmark ${bookmarkTitle}.`); }
 		}
 	}
 
-	private async deleteFolder(id: string, path:string, showNotice: boolean = false) {
+	private async deleteFolder(bookmarkTitle: string, path:string, showNotice: boolean = false) {
 		const folder = this.app.vault.getAbstractFileByPath(path);
 
 		if (folder && folder instanceof TFolder) {
 			await this.app.vault.delete(folder, true);
-			if (showNotice) { new Notice(`Readeck importer: Deleting bookmark ${id}`); }
+			if (showNotice) { new Notice(`Readeck Importer: Deleted bookmark ${bookmarkTitle}.`); }
 		} else if (!folder) {
-			if (showNotice) { new Notice(`Readeck importer: Error deleting bookmark ${id}`); }
+			if (showNotice) { new Notice(`Readeck Importer: An unknown error occurred while deleting bookmark ${bookmarkTitle}.`); }
 		}
 	}
 }
