@@ -4,11 +4,15 @@ export interface ReadeckPluginSettings {
 	apiToken: string;
 	username: string,
 	folder: string;
+	createBookmarkSubfolder: boolean;
+	slugifyFileNames: boolean;
 	lastSyncAt: string;
 	autoSyncOnStartup: boolean;
 	overwrite: boolean;
 	delete: boolean;
 	mode: string;
+	addLinkInAnnotations: boolean;
+	includeFrontmatter: boolean;
 }
 
 // i.e {"version":{"canonical":"0.21.5","release":"0.21.5","build":""},"features":["oauth"]}
@@ -85,6 +89,11 @@ export interface BookmarkData {
 
 export interface Bookmark {
 	title: string,
+	description: string,
+	created: string;
+	authors: string[],
+	url: string,
+	labels: string[]
 }
 
 export interface Annotation {

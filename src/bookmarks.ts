@@ -1,8 +1,9 @@
 import { App, Notice, TFile, TFolder } from "obsidian";
-import { Annotation, BookmarkData, BookmarkStatus, ReadeckPluginSettings } from "./interfaces";
+import { Annotation, Bookmark, BookmarkData, BookmarkStatus, ReadeckPluginSettings } from "./interfaces";
 import { ReadeckApi } from "./api";
 import { Utils } from "./utils";
 import { MultipartPart } from "@mjackson/multipart-parser";
+import { moment } from "obsidian";
 
 type BookmarksServiceDeps = {
 	app: App;
@@ -89,7 +90,7 @@ export class BookmarksService {
 		const toUpdateIds = bookmarksStatus.filter(b => b.type === 'update').map(b => b.id);
 		const bookmarksData = new Map<string, BookmarkData>();
 		for (const id of toUpdateIds) {
-			bookmarksData.set(id, { id: id, text: null, json: { title: '' }, images: [], annotations: [] });
+			bookmarksData.set(id, { id: id, text: null, json: { title: '', description: '', created: '', authors: [], url: '', labels: [] }, images: [], annotations: [] });
 		}
 
 		if (get.md || get.annotations) {
@@ -114,14 +115,14 @@ export class BookmarksService {
 			// Create markdown note
 			if (bookmark.text || bookmark.annotations.length > 0) {
 				// Create bookmark folder
-				const bookmarkFolderPath = `${this.settings.folder}/${id}`;
+				const bookmarkFolderPath = this.settings.createBookmarkSubfolder ? `${this.settings.folder}/${id}` : this.settings.folder;
 				await this.createFolderIfNotExists(id, bookmarkFolderPath);
-				this.addBookmarkMD(id, bookmark.json.title, bookmark.text, bookmark.annotations, bookmarkFolderPath);
+				this.addBookmarkMD(id, bookmark, bookmarkFolderPath);
 			}
 
 			// Save images
 			if (bookmark.images.length > 0 && bookmark.json) {
-				const bookmarkImgsFolderPath = `${this.settings.folder}/${id}/imgs`;
+				const bookmarkImgsFolderPath = this.settings.createBookmarkSubfolder ? `${this.settings.folder}/${id}/images` : `${this.settings.folder}/images`;
 				await this.createFolderIfNotExists(id, bookmarkImgsFolderPath);
 				for (const image of bookmark.images) {
 					const filePath = `${bookmarkImgsFolderPath}/${image.filename}`;
@@ -162,12 +163,27 @@ export class BookmarksService {
 		return multipart;
 	}
 
-	private async addBookmarkMD(bookmarkId: string, bookmarkTitle: string, bookmarkContent: string | null, bookmarkAnnotations: Annotation[], bookmarkFolderPath?: string) {
-		const filePath = `${bookmarkFolderPath}/${Utils.sanitizeFileName(bookmarkTitle)}.md`;
-		let noteContent = bookmarkContent || '';
+	private async addBookmarkMD(bookmarkId: string, bookmarkData: BookmarkData, bookmarkFolderPath?: string) {
+		const { json: bookmarkJson, json: { title: bookmarkTitle }, text: bookmarkContent, annotations: bookmarkAnnotations } = bookmarkData;
+		const filePath = `${bookmarkFolderPath}/${this.settings.slugifyFileNames ? Utils.slugifyFileName(bookmarkTitle) : Utils.sanitizeFileName(bookmarkTitle)}.md`;
+		let noteContent = '';
+
+		// The only time bookmarkContent can be null is when only annotations are imported
+		if (bookmarkContent == null && this.settings.includeFrontmatter) {
+			const frontmatter = this.buildFrontmatter(bookmarkJson!)
+			noteContent += frontmatter;
+		}
+
+		// Adds metadata of the original bookmark at the top of the note
+		if (bookmarkJson != null) {
+			noteContent += `[Visit the original here](${bookmarkJson.url})\n\n`;
+		}
+
+		if (bookmarkContent != null) noteContent += `${bookmarkContent}\n\n`;
+
 		if (bookmarkAnnotations.length > 0) {
 			const annotations = this.buildAnnotations(bookmarkId, bookmarkAnnotations);
-			noteContent += `\n\n${annotations}`;
+			noteContent += `${annotations}`;
 		}
 		await this.createFile(bookmarkTitle, filePath, noteContent);
 	}
@@ -197,13 +213,25 @@ export class BookmarksService {
 		return true;
 	}
 
+	private buildFrontmatter(bookmarkJson: Bookmark) {
+		const fields = [
+			['title', `"${bookmarkJson.title.replace(/"/g, '\\"')}"`],
+			['description', `"${bookmarkJson.description.replace(/"/g, '\\"')}"`],
+			['date', `"${moment(bookmarkJson.created).format("YYYY-MM-DD")}"`],
+			['authors', `[${bookmarkJson.authors.map(author => `"${author.replace(/"/g, '\\"')}"`).join(', ')}]`],
+			['tags', `[${bookmarkJson.labels.map(label => label).join(', ')}]`]
+		];
+		const frontmatter = fields.map(([key, value]) => `${key}: ${value}`).join('\n');
+		return `---\n${frontmatter}\n---\n`;
+	}
+
 	private buildAnnotations(bookmarkId: string, bookmarkAnnotations: Annotation[]) {
-		let annotationsContent = "# Annotations\n";
+		let annotationsContent = "# Annotations\n\n";
 		if (bookmarkAnnotations.length > 0) {
 			annotationsContent = annotationsContent + bookmarkAnnotations.map(
 				(ann: any) =>
 					`> ${ann.text}` +
-					` - [#](${this.settings.apiUrl}/bookmarks/${bookmarkId}#annotation-${ann.id})`
+					(this.settings.addLinkInAnnotations ? ` - [#](${this.settings.apiUrl}/bookmarks/${bookmarkId}#annotation-${ann.id})` : '')
 			).join('\n\n');
 		}
 		return annotationsContent;

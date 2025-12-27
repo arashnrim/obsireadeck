@@ -1,4 +1,4 @@
-import { App, ButtonComponent, Modal, Notice, PluginSettingTab, Setting, TextComponent } from "obsidian";
+import { App, ButtonComponent, Modal, Notice, PluginSettingTab, Setting, TextComponent, moment } from "obsidian";
 
 import ReadeckPlugin from "./plugin";
 
@@ -21,8 +21,8 @@ export class RDSettingTab extends PluginSettingTab {
 		let loginMode: "oauth" | "password" = "oauth";
 
 		new Setting(containerEl)
-			.setName('API URL')
-			.setDesc('URL of Readeck instance (without trailing "/").')
+			.setName('Readeck instance URL')
+			.setDesc('Ensure that there are no trailing slashes at the end of the URL.')
 			.addText(text => text
 				.setPlaceholder('https://readeck.domain.tld')
 				.setValue(this.plugin.settings.apiUrl)
@@ -35,8 +35,7 @@ export class RDSettingTab extends PluginSettingTab {
 		let logoutButton: ButtonComponent;
 
 		new Setting(containerEl)
-			.setName('Login')
-			.setDesc('Login to your Readeck account')
+			.setName('Log in to instance')
 			.addButton((btn) => {
 				loginButton = btn;
 				btn
@@ -125,8 +124,8 @@ export class RDSettingTab extends PluginSettingTab {
 			});
 
 		new Setting(containerEl)
-			.setName('Folder')
-			.setDesc('The folder where to save the notes')
+			.setName('Import location')
+			.setDesc('Retrieved bookmarks will be placed here.')
 			.addText(text => text
 				.setPlaceholder('Readeck')
 				.setValue(this.plugin.settings.folder)
@@ -134,12 +133,30 @@ export class RDSettingTab extends PluginSettingTab {
 					this.plugin.settings.folder = value;
 					await this.plugin.saveSettings();
 				}));
+		
+		new Setting(containerEl)
+			.setName('Create bookmark subfolders')
+			.setDesc(`If enabled, the bookmark will be stored in "${this.plugin.settings.folder}/<bookmark ID>/<bookmark name>.md". Otherwise, all bookmarks will be stored directly in "${this.plugin.settings.folder}/<bookmark name>.md".`)
+			.addToggle(toggle => toggle.setValue(this.plugin.settings.createBookmarkSubfolder)
+				.onChange(async (value) => {
+					this.plugin.settings.createBookmarkSubfolder = value;
+					await this.plugin.saveData(this.plugin.settings);
+				}));
+		
+		new Setting(containerEl)
+			.setName('Slugify file names')
+			.setDesc(`If enabled, the bookmark file names will be slugified to remove special characters and spaces. For example, "My Bookmark!" becomes "my-bookmark".`)
+			.addToggle(toggle => toggle.setValue(this.plugin.settings.slugifyFileNames)
+				.onChange(async (value) => {
+					this.plugin.settings.slugifyFileNames = value;
+					await this.plugin.saveData(this.plugin.settings);
+				}));
 
 		let lastSyncText: TextComponent;
 		let lastSyncButton: ButtonComponent;
 		new Setting(containerEl)
-			.setName('Last Sync')
-			.setDesc('Last time the plugin synced with Readeck. The "Sync" command fetches articles updated after this timestamp')
+			.setName('Last sync')
+			.setDesc('The last time the plugin synced with Readeck. The "Sync" command fetches articles updated after this timestamp.')
 			.addText((text) => {
 				lastSyncText = text;
 				text.setPlaceholder('MM/dd/yyyy, h:mm:ss a')
@@ -162,7 +179,7 @@ export class RDSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Sync on startup')
-			.setDesc('Sync bookmarks automatically when Obsidian starts')
+			.setDesc('Sync bookmarks automatically when Obsidian starts.')
 			.addToggle(toggle => toggle.setValue(this.plugin.settings.autoSyncOnStartup)
 				.onChange(async (value) => {
 					this.plugin.settings.autoSyncOnStartup = value;
@@ -170,8 +187,8 @@ export class RDSettingTab extends PluginSettingTab {
 				}));
 
 		new Setting(containerEl)
-			.setName('Overwrite if it already exists')
-			.setDesc('Overwrite the note if the bookmark already exists. Warning: the note will be overwritten')
+			.setName('Overwrite if bookmark already exists')
+			.setDesc('Warning: the note will be overwritten.')
 			.addToggle(toggle => toggle.setValue(this.plugin.settings.overwrite)
 				.onChange(async (value) => {
 					this.plugin.settings.overwrite = value;
@@ -179,8 +196,8 @@ export class RDSettingTab extends PluginSettingTab {
 				}));
 		
 		new Setting(containerEl)
-			.setName('Delete')
-			.setDesc('Delete the note if the bookmark was deleted')
+			.setName('Delete if bookmark was deleted')
+			.setDesc('If a bookmark was deleted in Readeck, delete the corresponding note in Obsidian.')
 			.addToggle(toggle => toggle.setValue(this.plugin.settings.delete)
 				.onChange(async (value) => {
 					this.plugin.settings.delete = value;
@@ -189,14 +206,14 @@ export class RDSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Set mode')
-			.setDesc('Set how the note is created')
+			.setDesc('Set how the note is created.')
 			.addDropdown((dropdown) => {
 				dropdown
 					.addOptions({
-						textImagesAnnotations: 'Text + Images + Annotations',
-						textImages: 'Text + Images',
-						textAnnotations: 'Text + Annotations',
-						text: 'Text',
+						// textImagesAnnotations: 'Text + Images + Annotations',
+						// textImages: 'Text + Images',
+						// textAnnotations: 'Text + Annotations',
+						// text: 'Text',
 						annotations: 'Annotations',
 					})
 					.setValue(this.plugin.settings.mode)
@@ -205,6 +222,26 @@ export class RDSettingTab extends PluginSettingTab {
 						await this.plugin.saveData(this.plugin.settings);
 					})
 			});
+		
+		new Setting(containerEl).setName("Annotations-only settings").setHeading();
+		
+		new Setting(containerEl)
+			.setName('Add link to Readeck in annotations')
+			.setDesc('Adds a link to the Readeck bookmark at the end of each annotation.')
+			.addToggle(toggle => toggle.setValue(this.plugin.settings.addLinkInAnnotations)
+				.onChange(async (value) => {
+					this.plugin.settings.addLinkInAnnotations = value;
+					await this.plugin.saveData(this.plugin.settings);
+				}));
+		
+		new Setting(containerEl)
+			.setName('Include frontmatter in annotations-only mode')
+			.setDesc('Includes the frontmatter of the bookmark in the annotations-only mode.')
+			.addToggle(toggle => toggle.setValue(this.plugin.settings.includeFrontmatter)
+				.onChange(async (value) => {
+					this.plugin.settings.includeFrontmatter = value;
+					await this.plugin.saveData(this.plugin.settings);
+				}));
 	}
 }
 

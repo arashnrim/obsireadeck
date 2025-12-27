@@ -12,6 +12,14 @@ export class Utils {
             .substring(0, 255);  // Limit filename length
     }
 
+    static slugifyFileName(fileName: string): string {
+        return this.sanitizeFileName(fileName)
+            .toLowerCase()
+            .replace(/ - /g, '-')
+            .replace(/\s+/g, '-')
+            .replace(/[^\w\-]/g, '');
+    }
+
     static async parseMultipart(articleData: any): Promise<any> {
         return new Promise(async (resolve, reject) => {
             try {

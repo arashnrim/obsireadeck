@@ -49,7 +49,7 @@ export class ReadeckApi {
                 "with_html": false,
                 "with_markdown": markdown,
                 "with_resources": resources,
-                "resource_prefix": "./imgs"
+                "resource_prefix": "./images"
             }),
         });
         return articleResponse;

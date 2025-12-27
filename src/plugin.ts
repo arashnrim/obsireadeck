@@ -1,4 +1,4 @@
-import { Notice, Plugin } from "obsidian";
+import { Plugin } from "obsidian";
 import { DEFAULT_SETTINGS, ReadeckPluginSettings } from "./interfaces";
 import { RDSettingTab } from "./settings";
 import { ReadeckApi } from "./api"
@@ -34,7 +34,7 @@ export default class RDPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'get-readeck-data',
-			name: 'Get readeck data',
+			name: 'Get Readeck data',
 			callback: () => this.bookmarks.getReadeckData(),
 		});
 
@@ -44,7 +44,6 @@ export default class RDPlugin extends Plugin {
 			callback: async () => {
 				this.settings.lastSyncAt = ''
 				await this.saveSettings()
-				new Notice('Readeck Last Sync reset')
 				await this.bookmarks.getReadeckData()
 			},
 		  })
@@ -53,7 +52,6 @@ export default class RDPlugin extends Plugin {
 		this.app.workspace.onLayoutReady(async () => {
 			if (this.settings.apiToken === "") {
 				return; // Not logged in
-
 			}
 			if (this.settings.autoSyncOnStartup === false) {
 				return;
