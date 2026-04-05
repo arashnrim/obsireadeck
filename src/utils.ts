@@ -1,5 +1,9 @@
 import { MultipartPart, parseMultipart } from "@mjackson/multipart-parser";
 
+export function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 export class Utils {
   static sanitizeFileName(fileName: string): string {
     // Replace illegal characters with an underscore or a safe character
@@ -21,30 +25,36 @@ export class Utils {
   }
 
   static async parseMultipart(articleData: any): Promise<any> {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // Get the content type and boundary from headers
-        const contentType = articleData.headers["content-type"];
-        const RE_BOUNDARY =
-          /^multipart\/.+?(?:; boundary=(?:(?:"(.+)")|(?:([^\s]+))))$/i;
-        const match = RE_BOUNDARY.exec(contentType);
-        if (!match) {
-          throw new Error("Invalid multipart content-type");
-        }
-        const boundary = match[1] || match[2];
-        let multipartMessage = Buffer.from(articleData.arrayBuffer);
-        const parts: MultipartPart[] = [];
+    // Get the content type and boundary from headers
+    const contentType = articleData.headers["content-type"];
+    const RE_BOUNDARY =
+      /^multipart\/.+?(?:; boundary=(?:(?:"(.+)")|(?:([^\s]+))))$/i;
+    const match = RE_BOUNDARY.exec(contentType);
+    if (!match) {
+      throw new Error("Invalid multipart content-type");
+    }
 
-        await parseMultipart(multipartMessage, { boundary }, async (part) => {
-          parts.push(part);
-        });
+    const boundary = match[1] || match[2];
+    const multipartMessage = new Uint8Array(articleData.arrayBuffer);
+    const parts: MultipartPart[] = [];
 
-        resolve(parts);
-      } catch (error) {
-        console.error("Error parsing multipart data:", error);
-        reject(error);
+    const result = (parseMultipart as any)(
+      multipartMessage,
+      { boundary },
+      (part: MultipartPart) => {
+        parts.push(part);
+      },
+    ) as Promise<void> | Iterable<MultipartPart>;
+
+    if (result && typeof (result as any)[Symbol.iterator] === "function") {
+      for (const part of result as Iterable<MultipartPart>) {
+        parts.push(part);
       }
-    });
+    } else {
+      await result;
+    }
+
+    return parts;
   }
 
   static updateImagePaths(text: string, oldPath: string, newPath: string) {

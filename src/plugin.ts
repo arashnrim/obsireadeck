@@ -6,10 +6,10 @@ import { BookmarksService } from "./bookmarks";
 import { AuthService } from "./auth";
 
 export default class RDPlugin extends Plugin {
-  settings: ReadeckPluginSettings;
-  api: ReadeckApi;
-  bookmarks: BookmarksService;
-  auth: AuthService;
+  settings!: ReadeckPluginSettings;
+  api!: ReadeckApi;
+  bookmarks!: BookmarksService;
+  auth!: AuthService;
 
   async onload() {
     console.log("Readeck Importer: Loading plugin v" + this.manifest.version);

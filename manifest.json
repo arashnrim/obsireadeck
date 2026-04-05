@@ -1,10 +1,10 @@
 {
-  "id": "readeck-importer",
+  "id": "obsireadeck",
   "name": "Readeck Importer",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "minAppVersion": "0.15.0",
-  "description": "Import bookmarks from Readeck.",
-  "author": "Makebit",
-  "authorUrl": "https://makeb.it",
+  "description": "Import your bookmarks, including text, images, and annotations, from Readeck into your Obsidian vault. A fork of the original plugin by Makebit.",
+  "author": "Arash Nur Iman",
+  "authorUrl": "https://arash.codes",
   "isDesktopOnly": false
 }

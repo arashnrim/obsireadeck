@@ -11,6 +11,7 @@ import {
   oAuthErrorEnum,
   InfoObject,
 } from "./interfaces";
+import { errorMessage } from "./utils";
 import manifest from "../manifest.json";
 
 export class ReadeckApi {
@@ -111,15 +112,15 @@ export class ReadeckApi {
         },
         body: JSON.stringify({
           client_name,
-          client_uri: "https://github.com/makebit/obsidian-readeck-importer",
-          software_id: "obsidian-readeck-importer-" + manifest.version,
+          client_uri: "https://github.com/arashnrim/obsireadeck",
+          software_id: "obsireadeck-" + manifest.version,
           software_version: manifest.version,
           grant_types: ["urn:ietf:params:oauth:grant-type:device_code"],
         }),
       });
       return response.json as oAuthClient;
     } catch (e) {
-      throw new Error(`Creating OAuth client failed: ${e.message}`);
+      throw new Error(`Creating OAuth client failed: ${errorMessage(e)}`);
     }
   }
 
@@ -219,7 +220,7 @@ export class ReadeckApi {
 
   async revokeOAuthToken(token: string): Promise<void> {
     try {
-      const response = await requestUrl({
+      await requestUrl({
         url: `${this.settings.apiUrl}/api/oauth/revoke`,
         method: "POST",
         headers: {
@@ -232,7 +233,7 @@ export class ReadeckApi {
         }),
       });
     } catch (e) {
-      throw new Error(`Revoking OAuth token failed: ${e.message}`);
+      throw new Error(`Revoking OAuth token failed: ${errorMessage(e)}`);
     }
   }
 

@@ -1,7 +1,7 @@
 {
   "name": "readeck",
-  "version": "3.0.0",
-  "description": "Import bookmarks from Readeck",
+  "version": "3.0.1",
+  "description": "Import your bookmarks, including text, images, and annotations, from Readeck into your Obsidian vault.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
@@ -9,19 +9,19 @@
     "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
   "keywords": [],
-  "author": "",
-  "license": "MIT",
+  "author": "Arash Nur Iman",
+  "license": "GPL-3.0-only",
   "devDependencies": {
-    "@types/node": "^24.9.2",
-    "@typescript-eslint/eslint-plugin": "8.46.2",
-    "@typescript-eslint/parser": "8.46.2",
+    "@types/node": "^25.5.2",
+    "@typescript-eslint/eslint-plugin": "8.58.0",
+    "@typescript-eslint/parser": "8.58.0",
     "builtin-modules": "5.0.0",
-    "esbuild": "0.25.11",
-    "obsidian": "1.10.0",
+    "esbuild": "0.28.0",
+    "obsidian": "1.12.3",
     "tslib": "2.8.1",
-    "typescript": "5.9.3"
+    "typescript": "6.0.2"
   },
   "dependencies": {
-    "@mjackson/multipart-parser": "^0.8.2"
+    "@mjackson/multipart-parser": "^0.10.1"
   }
 }

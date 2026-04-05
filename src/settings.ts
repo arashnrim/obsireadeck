@@ -6,10 +6,10 @@ import {
   PluginSettingTab,
   Setting,
   TextComponent,
-  moment,
 } from "obsidian";
 
 import ReadeckPlugin from "./plugin";
+import { errorMessage } from "./utils";
 
 export class RDSettingTab extends PluginSettingTab {
   plugin: ReadeckPlugin;
@@ -70,7 +70,7 @@ export class RDSettingTab extends PluginSettingTab {
               console.log("Error connecting to Readeck instance", err);
               new Notice(
                 "Readeck Importer: Error connecting to Readeck instance: " +
-                  err.message,
+                  errorMessage(err),
               );
               loginButton.setDisabled(false);
               return;
@@ -94,7 +94,9 @@ export class RDSettingTab extends PluginSettingTab {
                 }).open();
                 return;
               } catch (err) {
-                new Notice("Readeck Importer: Login error: " + err.message);
+                new Notice(
+                  "Readeck Importer: Login error: " + errorMessage(err),
+                );
                 loginButton.setDisabled(false);
                 return;
               }
@@ -125,7 +127,9 @@ export class RDSettingTab extends PluginSettingTab {
               loginButton.setDisabled(true);
               logoutButton.setDisabled(false);
             } catch (err) {
-              new Notice("Readeck Importer: OAuth login error: " + err.message);
+              new Notice(
+                "Readeck Importer: OAuth login error: " + errorMessage(err),
+              );
             } finally {
               if (this.plugin.settings.apiToken === "") {
                 loginButton.setDisabled(false);

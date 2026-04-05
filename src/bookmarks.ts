@@ -9,7 +9,6 @@ import {
 import { ReadeckApi } from "./api";
 import { Utils } from "./utils";
 import { MultipartPart } from "@mjackson/multipart-parser";
-import { moment } from "obsidian";
 
 type BookmarksServiceDeps = {
   app: App;
@@ -271,17 +270,25 @@ export class BookmarksService {
       const mediaType = partData.mediaType || "";
       const bookmarkId = partData.headers.get("Bookmark-Id") || "";
       const bookmark: BookmarkData = bookmarksData.get(bookmarkId)!;
+      const partText =
+        typeof (partData as any).text === "function"
+          ? await (partData as any).text()
+          : (partData as any).text;
+
+      const partBytes =
+        typeof (partData as any).bytes === "function"
+          ? await (partData as any).bytes()
+          : (partData as any).bytes;
+
       if (mediaType == "text/markdown") {
-        const markdownContent = await partData.text();
-        bookmark.text = markdownContent;
+        bookmark.text = partText;
       } else if (mediaType.includes("image")) {
         bookmark.images.push({
           filename: partData.filename,
-          content: partData.body,
+          content: partBytes,
         });
       } else if (mediaType.includes("json")) {
-        const jsonText = await partData.text();
-        bookmark.json = JSON.parse(jsonText);
+        bookmark.json = JSON.parse(partText);
       } else {
         console.warn(`Unknown content type: ${partData.mediaType}`);
       }
@@ -293,7 +300,10 @@ export class BookmarksService {
     const fields = [
       ["title", `"${bookmarkJson.title.replace(/"/g, '\\"')}"`],
       ["description", `"${bookmarkJson.description.replace(/"/g, '\\"')}"`],
-      ["date", `"${moment(bookmarkJson.created).format("YYYY-MM-DD")}"`],
+      [
+        "date",
+        `"${new Date(bookmarkJson.created).toISOString().slice(0, 10)}"`,
+      ],
       [
         "authors",
         `[${bookmarkJson.authors.map((author) => `"${author.replace(/"/g, '\\"')}"`).join(", ")}]`,
@@ -341,14 +351,14 @@ export class BookmarksService {
         await this.app.vault.modify(file, content);
         if (showNotice) {
           new Notice(
-            `Readeck Importer: Overwriting note for ${bookmarkTitle}.`,
+            `Readeck Importer: Overwriting note for "${bookmarkTitle}".`,
           );
         }
       } else {
         // the file exists and overwrite is false
         if (showNotice) {
           new Notice(
-            `Readeck Importer: Note for \"${bookmarkTitle}\" already exists.`,
+            `Readeck Importer: Note for "${bookmarkTitle}" already exists.`,
           );
         }
       }
@@ -356,7 +366,7 @@ export class BookmarksService {
       // create file if not exists
       await this.app.vault.create(filePath, content);
       if (showNotice) {
-        new Notice(`Readeck Importer: Creating note for ${bookmarkTitle}.`);
+        new Notice(`Readeck Importer: Creating note for "${bookmarkTitle}".`);
       }
     }
   }
@@ -371,7 +381,7 @@ export class BookmarksService {
     if (folder && folder instanceof TFolder) {
       if (showNotice) {
         new Notice(
-          `Readeck Importer: A folder or file already exists in ${bookmarkTitle}.`,
+          `Readeck Importer: A folder or file already exists in "${bookmarkTitle}".`,
         );
       }
     } else {
@@ -379,7 +389,7 @@ export class BookmarksService {
       await this.app.vault.createFolder(path);
       if (showNotice) {
         new Notice(
-          `Readeck Importer: Created a folder for bookmark ${bookmarkTitle}.`,
+          `Readeck Importer: Created a folder for bookmark "${bookmarkTitle}".`,
         );
       }
     }
@@ -395,12 +405,12 @@ export class BookmarksService {
     if (folder && folder instanceof TFolder) {
       await this.app.vault.delete(folder, true);
       if (showNotice) {
-        new Notice(`Readeck Importer: Deleted bookmark ${bookmarkTitle}.`);
+        new Notice(`Readeck Importer: Deleted bookmark "${bookmarkTitle}".`);
       }
     } else if (!folder) {
       if (showNotice) {
         new Notice(
-          `Readeck Importer: An unknown error occurred while deleting bookmark ${bookmarkTitle}.`,
+          `Readeck Importer: An unknown error occurred while deleting bookmark "${bookmarkTitle}".`,
         );
       }
     }
