@@ -13,6 +13,13 @@ export interface ReadeckPluginSettings {
   noticeVerbosity: string;
   addLinkInAnnotations: boolean;
   includeFrontmatter: boolean;
+  frontmatterFields: {
+    title: boolean;
+    description: boolean;
+    date: boolean;
+    authors: boolean;
+    tags: boolean;
+  };
 }
 
 // i.e {"version":{"canonical":"0.21.5","release":"0.21.5","build":""},"features":["oauth"]}
@@ -124,4 +131,11 @@ export const DEFAULT_SETTINGS: ReadeckPluginSettings = {
   noticeVerbosity: "normal",
   addLinkInAnnotations: true,
   includeFrontmatter: true,
+  frontmatterFields: {
+    title: true,
+    description: true,
+    date: true,
+    authors: true,
+    tags: true,
+  },
 };

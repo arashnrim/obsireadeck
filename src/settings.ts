@@ -21,7 +21,7 @@ export class RDSettingTab extends PluginSettingTab {
 
   display(): void {
     const { containerEl } = this;
-    const client_name = "Obsidian Readeck Importer";
+    const client_name = "Readeck Importer";
 
     containerEl.empty();
 
@@ -51,7 +51,7 @@ export class RDSettingTab extends PluginSettingTab {
       .addButton((btn) => {
         loginButton = btn;
         btn
-          .setButtonText(loggedIn ? `Authenticated` : "Login")
+          .setButtonText(loggedIn ? `Logged in` : "Log in")
           .setDisabled(loggedIn)
           .setCta()
           .onClick(async () => {
@@ -123,7 +123,7 @@ export class RDSettingTab extends PluginSettingTab {
                 return;
               }
 
-              loginButton.setButtonText(`Authenticated`);
+              loginButton.setButtonText(`Logged in`);
               loginButton.setDisabled(true);
               logoutButton.setDisabled(false);
             } catch (err) {
@@ -140,11 +140,11 @@ export class RDSettingTab extends PluginSettingTab {
       .addButton((btn) => {
         logoutButton = btn;
         btn
-          .setButtonText("Logout")
+          .setButtonText("Log out")
           .setDisabled(!loggedIn)
           .onClick(async () => {
             // update ui
-            loginButton.setButtonText("Login");
+            loginButton.setButtonText("Log in");
             loginButton.setDisabled(false);
             logoutButton.setDisabled(true);
             await this.plugin.auth.logout();
@@ -156,7 +156,7 @@ export class RDSettingTab extends PluginSettingTab {
       .setDesc("Retrieved bookmarks will be placed here.")
       .addText((text) =>
         text
-          .setPlaceholder("Readeck")
+          .setPlaceholder("Example: folder 1/folder 2")
           .setValue(this.plugin.settings.folder)
           .onChange(async (value) => {
             this.plugin.settings.folder = value;
@@ -197,7 +197,7 @@ export class RDSettingTab extends PluginSettingTab {
     new Setting(containerEl)
       .setName("Last sync")
       .setDesc(
-        'The last time the plugin synced with Readeck. The "Sync" command fetches articles updated after this timestamp.',
+        "The last time the plugin synced with Readeck. If you reset this, the next sync will fetch all bookmarks again.",
       )
       .addText((text) => {
         lastSyncText = text;
@@ -237,7 +237,9 @@ export class RDSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Overwrite if bookmark already exists")
-      .setDesc("Warning: the note will be overwritten.")
+      .setDesc(
+        "This is useful if you frequently return to old bookmarks and add new annotations. The note will be overwritten.",
+      )
       .addToggle((toggle) =>
         toggle
           .setValue(this.plugin.settings.overwrite)
@@ -261,7 +263,7 @@ export class RDSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Set mode")
-      .setDesc("Set how the note is created.")
+      .setDesc("Set what details are included in the created note.")
       .addDropdown((dropdown) => {
         dropdown
           .addOptions({
@@ -294,7 +296,7 @@ export class RDSettingTab extends PluginSettingTab {
           });
       });
 
-    new Setting(containerEl).setName("Annotations-only settings").setHeading();
+    new Setting(containerEl).setName("Advanced").setHeading();
 
     new Setting(containerEl)
       .setName("Add link to Readeck in annotations")
@@ -311,9 +313,9 @@ export class RDSettingTab extends PluginSettingTab {
       );
 
     new Setting(containerEl)
-      .setName("Include frontmatter in annotations-only mode")
+      .setName("Include frontmatter")
       .setDesc(
-        "Includes the frontmatter of the bookmark in the annotations-only mode.",
+        "Includes the frontmatter of the bookmark, including details like the title, author, and tags. You can customise what fields are included below.",
       )
       .addToggle((toggle) =>
         toggle
@@ -321,8 +323,63 @@ export class RDSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.includeFrontmatter = value;
             await this.plugin.saveData(this.plugin.settings);
+            this.display();
           }),
       );
+
+    if (this.plugin.settings.includeFrontmatter) {
+      new Setting(containerEl)
+        .setName("Frontmatter fields")
+        .setDesc("Choose which fields to include in the frontmatter.")
+        .setHeading();
+
+      new Setting(containerEl).setName("Include title").addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.frontmatterFields.title)
+          .onChange(async (value) => {
+            this.plugin.settings.frontmatterFields.title = value;
+            await this.plugin.saveData(this.plugin.settings);
+          }),
+      );
+
+      new Setting(containerEl)
+        .setName("Include description")
+        .addToggle((toggle) =>
+          toggle
+            .setValue(this.plugin.settings.frontmatterFields.description)
+            .onChange(async (value) => {
+              this.plugin.settings.frontmatterFields.description = value;
+              await this.plugin.saveData(this.plugin.settings);
+            }),
+        );
+
+      new Setting(containerEl).setName("Include date").addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.frontmatterFields.date)
+          .onChange(async (value) => {
+            this.plugin.settings.frontmatterFields.date = value;
+            await this.plugin.saveData(this.plugin.settings);
+          }),
+      );
+
+      new Setting(containerEl).setName("Include authors").addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.frontmatterFields.authors)
+          .onChange(async (value) => {
+            this.plugin.settings.frontmatterFields.authors = value;
+            await this.plugin.saveData(this.plugin.settings);
+          }),
+      );
+
+      new Setting(containerEl).setName("Include tags").addToggle((toggle) =>
+        toggle
+          .setValue(this.plugin.settings.frontmatterFields.tags)
+          .onChange(async (value) => {
+            this.plugin.settings.frontmatterFields.tags = value;
+            await this.plugin.saveData(this.plugin.settings);
+          }),
+      );
+    }
   }
 }
 

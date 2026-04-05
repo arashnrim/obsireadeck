@@ -297,19 +297,40 @@ export class BookmarksService {
   }
 
   private buildFrontmatter(bookmarkJson: Bookmark) {
-    const fields = [
-      ["title", `"${bookmarkJson.title.replace(/"/g, '\\"')}"`],
-      ["description", `"${bookmarkJson.description.replace(/"/g, '\\"')}"`],
-      [
+    const fields: Array<[string, string]> = [];
+
+    if (this.settings.frontmatterFields.title) {
+      fields.push(["title", `"${bookmarkJson.title.replace(/"/g, '\\"')}"`]);
+    }
+
+    if (this.settings.frontmatterFields.description) {
+      fields.push([
+        "description",
+        `"${bookmarkJson.description.replace(/"/g, '\\"')}"`,
+      ]);
+    }
+
+    if (this.settings.frontmatterFields.date) {
+      fields.push([
         "date",
         `"${new Date(bookmarkJson.created).toISOString().slice(0, 10)}"`,
-      ],
-      [
+      ]);
+    }
+
+    if (this.settings.frontmatterFields.authors) {
+      fields.push([
         "authors",
         `[${bookmarkJson.authors.map((author) => `"${author.replace(/"/g, '\\"')}"`).join(", ")}]`,
-      ],
-      ["tags", `[${bookmarkJson.labels.map((label) => label).join(", ")}]`],
-    ];
+      ]);
+    }
+
+    if (this.settings.frontmatterFields.tags) {
+      fields.push([
+        "tags",
+        `[${bookmarkJson.labels.map((label) => label).join(", ")}]`,
+      ]);
+    }
+
     const frontmatter = fields
       .map(([key, value]) => `${key}: ${value}`)
       .join("\n");
